@@ -1,0 +1,162 @@
+{
+	"name": "m_load_file_to_bronze",
+	"properties": {
+		"activities": [
+			{
+				"name": "LookupLoadConfig",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT\nSourceName,\n  -- Container Name: First part before the first slash\n  LEFT(FilePath, CHARINDEX('/', FilePath) - 1) AS container_name,\n\n  -- Directory Name: Between first and second slash\n  SUBSTRING(\n    FilePath,\n    CHARINDEX('/', FilePath) + 1,\n    CHARINDEX('/', FilePath, CHARINDEX('/', FilePath) + 1) - CHARINDEX('/', FilePath) - 1\n  ) AS directory_name,\n\n  -- File Name: After the last slash\n  RIGHT(FilePath, CHARINDEX('/', REVERSE(FilePath)) - 1) AS file_name,\n  LoadType,DestinationTable,FileType\n\nFROM LOAD_CONFIG;",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTable",
+						"type": "DatasetReference",
+						"parameters": {
+							"SchemaName": "dbo",
+							"TableName": "LOAD_CONFIG"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEachFile",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LookupLoadConfig",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LookupLoadConfig').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "SwitchFileType",
+							"type": "Switch",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"on": {
+									"value": "@item().FileType",
+									"type": "Expression"
+								},
+								"cases": [
+									{
+										"value": "CSV",
+										"activities": [
+											{
+												"name": "Execute Csv Pipeline",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "m_full_append_csv_load_bronze",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"LoadType": {
+															"value": "@item().LoadType",
+															"type": "Expression"
+														},
+														"SrcFileName": {
+															"value": "@item().file_name",
+															"type": "Expression"
+														},
+														"SrcFilePath": {
+															"value": "@item().container_name",
+															"type": "Expression"
+														},
+														"TargetTable": {
+															"value": "@item().DestinationTable",
+															"type": "Expression"
+														},
+														"Directory": {
+															"value": "@item().directory_name",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "JSON",
+										"activities": [
+											{
+												"name": "Execute Json Pipeline",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "m_full_append_json_load_bronze",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"LoadType": {
+															"value": "@item().LoadType",
+															"type": "Expression"
+														},
+														"SrcFileName": {
+															"value": "@item().file_name",
+															"type": "Expression"
+														},
+														"SrcFilePath": {
+															"value": "@item().container_name",
+															"type": "Expression"
+														},
+														"TargetTable": {
+															"value": "@item().DestinationTable",
+															"type": "Expression"
+														},
+														"Directory": {
+															"value": "@item().directory_name",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-05-21T03:16:59Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

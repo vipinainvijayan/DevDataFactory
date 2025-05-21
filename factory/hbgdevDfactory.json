@@ -1,0 +1,9 @@
+{
+	"name": "hbgdevDfactory",
+	"location": "australiaeast",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "df8e52bd-3ed4-4a81-84c0-b4a66f94e74d",
+		"tenantId": "e66985ac-b9b0-4e1e-b734-3d8ff6f157e7"
+	}
+}
