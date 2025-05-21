@@ -17,7 +17,7 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "SELECT\nSourceName,\n  -- Container Name: First part before the first slash\n  LEFT(FilePath, CHARINDEX('/', FilePath) - 1) AS container_name,\n\n  -- Directory Name: Between first and second slash\n  SUBSTRING(\n    FilePath,\n    CHARINDEX('/', FilePath) + 1,\n    CHARINDEX('/', FilePath, CHARINDEX('/', FilePath) + 1) - CHARINDEX('/', FilePath) - 1\n  ) AS directory_name,\n\n  -- File Name: After the last slash\n  RIGHT(FilePath, CHARINDEX('/', REVERSE(FilePath)) - 1) AS file_name,\n  LoadType,DestinationTable,FileType\n\nFROM LOAD_CONFIG;",
+						"sqlReaderQuery": "SELECT\nSourceName,\nLEFT(FilePath, CHARINDEX('/', FilePath) - 1) AS container_name,\nSUBSTRING(\n    FilePath,\n    CHARINDEX('/', FilePath) + 1,\n    CHARINDEX('/', FilePath, CHARINDEX('/', FilePath) + 1) - CHARINDEX('/', FilePath) - 1\n  ) AS directory_name,\nRIGHT(FilePath, CHARINDEX('/', REVERSE(FilePath)) - 1) AS file_name,\n  LoadType,DestinationTable,FileType\n\nFROM LOAD_CONFIG;",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
